@@ -1,5 +1,6 @@
+// src/composables/useInvoice.ts
 import { ref } from 'vue';
-import openApiInstance from '@/api/openApiInstance';
+import { invoiceApiInstance } from '@/api/openApiInstance'; // CAMBIATO QUI
 import { useBillingStore } from '@/stores/billingStore';
 import type { OpenApiResponse } from '@/types';
 
@@ -10,32 +11,49 @@ export function useInvoice() {
   const invoiceId = ref<string | null>(null);
 
   const sendInvoice = async (items: any[], payments: any[]) => {
-    // Controllo di sicurezza: abbiamo un'azienda valida?
-    if (!store.selectedCompany || !store.canInvoice) {
-      error.value = "Impossibile procedere: mancano i dati dell'azienda o l'azienda non è attiva.";
+    if (!store.myCompany || !store.selectedCompany || !store.canInvoice) {
+      error.value = "Impossibile procedere: configura prima la tua azienda e seleziona un cliente attivo.";
       return;
     }
 
     loading.value = true;
     error.value = null;
 
-    // Costruiamo il payload usando i dati dello Store (Fase 1) e i dati del form (Fase 2)
     const payload = {
-      fiscal_id: store.selectedCompany.fiscal_id, // Preso automaticamente dal Pacchetto 3
-      date: new Date().toISOString(),
+      sender: {
+        fiscal_id: store.myCompany.fiscal_id,
+        vat_number: store.myCompany.vat_number,
+        company_name: store.myCompany.name,
+        address: store.myCompany.address,
+        sdi_code: store.myCompany.sdi_code || '',
+        pec: store.myCompany.pec || ''
+      },
+      receiver: {
+        fiscal_id: store.selectedCompany.fiscal_id,
+        vat_number: store.selectedCompany.vat_number,
+        company_name: store.selectedCompany.name,
+        address: store.selectedCompany.address,
+        sdi_code: store.selectedCompany.sdi_code || '',
+        pec: store.selectedCompany.pec || ''
+      },
+      document: {
+        type: 'receipt',
+        date: new Date().toISOString().split('T')[0],
+        number: `SCT-${Date.now()}`,
+        currency: 'EUR'
+      },
       items: items,
       payments: payments
     };
 
     try {
-      // Invio all'endpoint Invoice di OpenAPI
-      const response = await openApiInstance.post<OpenApiResponse<any>>(
-        '/IT-receipts', 
+      // CAMBIATO: usa invoiceApiInstance
+      const response = await invoiceApiInstance.post<OpenApiResponse<any>>(
+        '/IT-invoice', 
         payload
       );
 
-      // Salviamo l'ID ricevuto per il tracking
-      invoiceId.value = response.data.data.id;
+      invoiceId.value = response.data.data?.invoice_id || response.data.data?.id;
       return response.data.data;
       
     } catch (err: any) {

@@ -1,5 +1,6 @@
+// src/composables/useCompany.ts
 import { ref } from 'vue';
-import openApiInstance from '@/api/openApiInstance';
+import { companyApiInstance } from '@/api/openApiInstance'; // CAMBIATO QUI
 import type { CompanyData, OpenApiResponse, OpenApiCompanyResponse } from '@/types';
 
 export function useCompany() {
@@ -7,9 +8,7 @@ export function useCompany() {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // Funzione per mappare la risposta API al formato interno
   const mapApiResponseToCompanyData = (apiData: OpenApiCompanyResponse): CompanyData => {
-    // Mappa lo stato dell'attività
     let status: 'ACTIVE' | 'INACTIVE' | 'CEASED' = 'INACTIVE';
     if (apiData.activityStatus === 'ATTIVA') {
       status = 'ACTIVE';
@@ -31,7 +30,7 @@ export function useCompany() {
       pec: apiData.pec,
       sdi_code: apiData.sdiCode,
       status: status,
-      financial_score: undefined // L'API non fornisce questo campo nel pacchetto base
+      financial_score: undefined
     };
   };
 
@@ -40,12 +39,11 @@ export function useCompany() {
     error.value = null;
 
     try {
-      // Chiamata all'endpoint IT-advanced (Pacchetto 3)
-      const response = await openApiInstance.get<OpenApiResponse<OpenApiCompanyResponse[]>>(
+      // CAMBIATO: usa companyApiInstance invece di openApiInstance
+      const response = await companyApiInstance.get<OpenApiResponse<OpenApiCompanyResponse[]>>(
         `/IT-advanced/${vatNumber}`
       );
 
-      // L'API restituisce un array, prendiamo il primo elemento
       const apiData = response.data.data[0];
 
       if (!apiData) {
@@ -54,15 +52,12 @@ export function useCompany() {
         return;
       }
 
-      // Mappiamo i dati al formato interno
       const data = mapApiResponseToCompanyData(apiData);
 
-      // Logica di Validazione: Check se l'azienda è attiva
       if (data.status !== 'ACTIVE') {
         error.value = "Attenzione: L'azienda non risulta attiva. Fatturazione non consigliata.";
       }
 
-      // Risk Check: Se lo score è troppo basso (logica custom)
       if (data.financial_score === 'D') {
         error.value = "Rischio finanziario elevato (Score D). Verificare prima di procedere.";
       }

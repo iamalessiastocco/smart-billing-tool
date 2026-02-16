@@ -1,30 +1,48 @@
+// src/stores/billingStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { CompanyData } from '@/types';
 
 export const useBillingStore = defineStore('billing', () => {
-  // Stato: l'azienda selezionata per la fatturazione
+  // NUOVO: La mia azienda (mittente)
+  const myCompany = ref<CompanyData | null>(null);
+  
+  // Azienda destinataria (cliente)
   const selectedCompany = ref<CompanyData | null>(null);
 
-  // Azione: salva l'azienda nello store
+  // NUOVO: Azione per impostare la propria azienda
+  function setMyCompany(company: CompanyData) {
+    myCompany.value = company;
+  }
+
   function setCompany(company: CompanyData) {
     selectedCompany.value = company;
   }
 
-  // Azione: resetta tutto (es. dopo l'invio o per un nuovo cliente)
   function clearStore() {
     selectedCompany.value = null;
   }
 
-  // Getter: controlla se possiamo procedere alla fatturazione
+  // NUOVO: Controllo se ho configurato la mia azienda
+  const isConfigured = computed(() => {
+    return myCompany.value !== null;
+  });
+
   const canInvoice = computed(() => {
-    return selectedCompany.value !== null && selectedCompany.value.status === 'ACTIVE';
+    return (
+      myCompany.value !== null &&
+      selectedCompany.value !== null && 
+      selectedCompany.value.status === 'ACTIVE'
+    );
   });
 
   return { 
+    myCompany,
     selectedCompany, 
+    setMyCompany,
     setCompany, 
     clearStore, 
+    isConfigured,
     canInvoice 
   };
 });

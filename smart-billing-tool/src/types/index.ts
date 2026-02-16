@@ -29,12 +29,13 @@ export interface OpenApiCompanyResponse {
   };
 }
 
-// Rappresenta l'azienda che usiamo internamente nell'app
+// src/types/index.ts
 export interface CompanyData {
   vat_number: string;
   fiscal_id: string;
   name: string;
-  address: {
+  email: string;               // ← AGGIUNTO
+  address?: {
     street: string;
     city: string;
     zip: string;
@@ -43,8 +44,13 @@ export interface CompanyData {
   };
   pec?: string;
   sdi_code?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'CEASED'; // Per la validazione
-  financial_score?: string; // Es. "A-", "B", ecc.
+  status: 'ACTIVE' | 'INACTIVE' | 'CEASED';
+  financial_score?: string;
+  receipts_auth?: {           // ← AGGIUNTO (opzionale)
+    taxCode: string;
+    password: string;
+    pin: string;
+  };
 }
 
 // Struttura della risposta tipica di OpenAPI
