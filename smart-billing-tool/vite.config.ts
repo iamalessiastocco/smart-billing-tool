@@ -15,4 +15,14 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      '/it': {
+        target: 'https://test.company.openapi.com',
+        changeOrigin: true,
+        secure: false,
+        // riscrive solo il dominio, lasciando il path invariato
+      },
+    },
+  },
 })
