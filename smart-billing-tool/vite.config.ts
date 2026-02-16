@@ -17,12 +17,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/it': {
+      '/api': {
         target: 'https://test.company.openapi.com',
         changeOrigin: true,
-        secure: false,
-        // riscrive solo il dominio, lasciando il path invariato
-      },
-    },
-  },
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: true,
+      }
+    }
+  }
 })

@@ -1,4 +1,35 @@
-// Rappresenta l'azienda che cerchiamo con il Pacchetto 3 (IT-advanced)
+// Struttura della risposta dell'API OpenAPI IT-advanced
+export interface OpenApiCompanyResponse {
+  taxCode: string;
+  vatCode: string;
+  companyName: string;
+  address: {
+    registeredOffice: {
+      toponym?: string;
+      street: string;
+      streetNumber?: string;
+      town: string;
+      province: string;
+      zipCode: string;
+      region?: {
+        code: string;
+        description: string;
+      };
+    };
+  };
+  pec?: string;
+  sdiCode?: string;
+  activityStatus: string; // "ATTIVA", "CESSATA", etc.
+  balanceSheets?: {
+    last?: {
+      year: number;
+      turnover?: number;
+      netWorth?: number;
+    };
+  };
+}
+
+// Rappresenta l'azienda che usiamo internamente nell'app
 export interface CompanyData {
   vat_number: string;
   fiscal_id: string;
@@ -19,5 +50,7 @@ export interface CompanyData {
 // Struttura della risposta tipica di OpenAPI
 export interface OpenApiResponse<T> {
   data: T;
-  status: number;
+  success: boolean;
+  message: string;
+  error: any;
 }
