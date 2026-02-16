@@ -8,8 +8,7 @@
       <div class="success-badge">✅ Benvenuto/a!</div>
       <div class="company-info">
         <h3>{{ store.myCompany?.name }}</h3>
-        <p><strong>P.IVA:</strong> {{ store.myCompany?.vat_number }}</p>
-        <p><strong>Codice Fiscale:</strong> {{ store.myCompany?.fiscal_id }}</p>
+        <p><strong>Codice Fiscale/P.IVA:</strong> {{ store.myCompany?.fiscal_id }}</p>
         <p><strong>Email:</strong> {{ store.myCompany?.email }}</p>
       </div>
       <button @click="handleLogout" class="logout-btn">
@@ -37,24 +36,26 @@
         </button>
       </div>
 
-      <!-- LOGIN -->
+      <!-- LOGIN CON CODICE FISCALE -->
       <div v-if="activeTab === 'login'" class="auth-form">
-        <h3>Accedi con la tua P.IVA</h3>
-        <p class="form-description">Inserisci la Partita IVA che hai già registrato</p>
+        <h3>Accedi con il tuo Codice Fiscale</h3>
+        <p class="form-description">Inserisci il Codice Fiscale che hai registrato</p>
         
         <div class="form-field">
-          <label>Partita IVA *</label>
+          <label>Codice Fiscale / P.IVA *</label>
           <input 
-            v-model="loginVat" 
-            placeholder="12345678901"
-            maxlength="11"
+            v-model="loginFiscalId" 
+            placeholder="RSSMRA80A01H501U oppure 12345678901"
+            maxlength="16"
             @keyup.enter="handleLogin"
+            style="text-transform: uppercase"
           />
+          <p class="field-hint">Per le società: Codice Fiscale = P.IVA (11 cifre)</p>
         </div>
 
         <button 
           @click="handleLogin" 
-          :disabled="loading || !loginVat"
+          :disabled="loading || !loginFiscalId"
           class="submit-btn"
         >
           {{ loading ? '⏳ Accesso...' : '🔐 Accedi' }}
@@ -69,53 +70,98 @@
         <form @submit.prevent="handleSignup" class="form-grid">
           <div class="form-field">
             <label>Codice Fiscale *</label>
-            <input v-model="formData.fiscal_id" required maxlength="16" />
+            <input 
+              v-model="formData.fiscal_id" 
+              required 
+              maxlength="16" 
+              style="text-transform: uppercase"
+              placeholder="RSSMRA80A01H501U"
+            />
+            <p class="field-hint">Per società: uguale alla P.IVA</p>
           </div>
           
           <div class="form-field">
             <label>Partita IVA *</label>
-            <input v-model="formData.vat_number" required maxlength="11" />
+            <input 
+              v-model="formData.vat_number" 
+              required 
+              maxlength="11"
+              placeholder="12345678901"
+            />
           </div>
 
           <div class="form-field full-width">
             <label>Ragione Sociale *</label>
-            <input v-model="formData.name" required />
+            <input 
+              v-model="formData.name" 
+              required 
+              placeholder="La Mia Azienda S.r.l."
+            />
           </div>
 
           <div class="form-field full-width">
             <label>Email *</label>
-            <input v-model="formData.email" type="email" required placeholder="info@azienda.it" />
+            <input 
+              v-model="formData.email" 
+              type="email" 
+              required 
+              placeholder="info@azienda.it" 
+            />
             <p class="field-note">⚠️ L'email non può essere modificata dopo la creazione</p>
           </div>
 
           <div class="form-field full-width">
             <label>Indirizzo</label>
-            <input v-model="formData.address.street" placeholder="Via Roma 123" />
+            <input 
+              v-model="formData.address.street" 
+              placeholder="Via Roma 123" 
+            />
           </div>
 
           <div class="form-field">
             <label>Città</label>
-            <input v-model="formData.address.city" />
+            <input 
+              v-model="formData.address.city" 
+              placeholder="Roma"
+            />
           </div>
 
           <div class="form-field">
             <label>CAP</label>
-            <input v-model="formData.address.zip" maxlength="5" />
+            <input 
+              v-model="formData.address.zip" 
+              maxlength="5"
+              placeholder="00100"
+            />
           </div>
 
           <div class="form-field">
             <label>Provincia</label>
-            <input v-model="formData.address.province" maxlength="2" placeholder="RM" />
+            <input 
+              v-model="formData.address.province" 
+              maxlength="2" 
+              placeholder="RM" 
+              style="text-transform: uppercase"
+            />
           </div>
 
           <div class="form-field">
             <label>Codice SDI</label>
-            <input v-model="formData.sdi_code" maxlength="7" />
+            <input 
+              v-model="formData.sdi_code" 
+              maxlength="7" 
+              placeholder="ABCD123"
+              style="text-transform: uppercase"
+            />
           </div>
 
           <div class="form-field full-width">
             <label>PEC</label>
-            <input v-model="formData.pec" type="email" />
+            <input 
+              v-model="formData.pec" 
+              type="email"
+              placeholder="azienda@pec.it"
+            />
           </div>
 
           <button type="submit" :disabled="loading" class="submit-btn">
@@ -142,12 +188,12 @@ const {
   loading, 
   error: apiError, 
   createCompanyConfig,
-  loginWithVat,
+  loginWithFiscalId,
   logout: logoutConfig
 } = useCompanyConfig();
 
 const activeTab = ref<'login' | 'signup'>('login');
-const loginVat = ref('');
+const loginFiscalId = ref('');
 const error = ref<string | null>(null);
 const success = ref<string | null>(null);
 
@@ -168,6 +214,7 @@ const formData = ref({
   status: 'ACTIVE' as const
 });
 
+// Carica sessione all'avvio
 onMounted(() => {
   if (myCompany.value) {
     store.setMyCompany(myCompany.value);
@@ -175,25 +222,27 @@ onMounted(() => {
   }
 });
 
+// LOGIN con Codice Fiscale
 const handleLogin = async () => {
   error.value = null;
   success.value = null;
 
-  if (!loginVat.value) {
-    error.value = "Inserisci la Partita IVA";
+  if (!loginFiscalId.value) {
+    error.value = "Inserisci il Codice Fiscale";
     return;
   }
 
   try {
-    const company = await loginWithVat(loginVat.value);
+    const company = await loginWithFiscalId(loginFiscalId.value.toUpperCase());
     store.setMyCompany(company);
     success.value = `Benvenuto/a ${company.name}!`;
-    loginVat.value = '';
+    loginFiscalId.value = '';
   } catch (err) {
     error.value = apiError.value || "Errore durante l'accesso";
   }
 };
 
+// SIGN UP
 const handleSignup = async () => {
   error.value = null;
   success.value = null;
@@ -208,6 +257,7 @@ const handleSignup = async () => {
     store.setMyCompany(company);
     success.value = "Registrazione completata! Benvenuto/a!";
     
+    // Reset form
     formData.value = {
       fiscal_id: '',
       vat_number: '',
@@ -223,13 +273,14 @@ const handleSignup = async () => {
   }
 };
 
+// LOGOUT
 const handleLogout = () => {
   logoutConfig();
   store.logout();
   error.value = null;
   success.value = "Logout effettuato. A presto!";
   activeTab.value = 'login';
-  loginVat.value = '';
+  loginFiscalId.value = '';
   
   setTimeout(() => {
     success.value = null;
@@ -250,6 +301,7 @@ h2 {
   margin-bottom: 20px;
 }
 
+/* LOGGED IN */
 .logged-in {
   background: white;
   padding: 30px;
@@ -291,12 +343,14 @@ h2 {
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  transition: background 0.3s;
 }
 
 .logout-btn:hover {
   background: #5a6268;
 }
 
+/* TABS */
 .tabs {
   display: flex;
   gap: 10px;
@@ -321,6 +375,11 @@ h2 {
   border-color: #007bff;
 }
 
+.tab-btn:hover:not(.active) {
+  background: #f8f9fa;
+}
+
+/* FORMS */
 .auth-form {
   background: white;
   padding: 25px;
@@ -361,11 +420,25 @@ h2 {
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 1em;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
 }
 
 .field-note {
   font-size: 0.75em;
   color: #856404;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.field-hint {
+  font-size: 0.75em;
+  color: #6c757d;
   margin-top: 4px;
   font-style: italic;
 }
@@ -381,16 +454,18 @@ h2 {
   cursor: pointer;
   font-size: 1.1em;
   margin-top: 10px;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
 }
 
 .submit-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+  transform: none;
 }
 
 .error-msg {

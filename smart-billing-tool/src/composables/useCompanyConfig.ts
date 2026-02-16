@@ -10,7 +10,7 @@ export function useCompanyConfig() {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // Carica la sessione salvata
+  // Carica sessione dal localStorage
   const loadSession = () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -26,7 +26,7 @@ export function useCompanyConfig() {
     }
   };
 
-  // Salva la sessione
+  // Salva sessione nel localStorage
   const saveSession = (company: CompanyData) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(company));
@@ -36,14 +36,14 @@ export function useCompanyConfig() {
     }
   };
 
-  // Logout - cancella la sessione
+  // Logout - cancella sessione
   const logout = () => {
     localStorage.removeItem(STORAGE_KEY);
     myCompany.value = null;
     console.log('🚪 Logout effettuato');
   };
 
-  // Crea nuova configurazione (SIGN UP)
+  // SIGN UP - Crea nuova configurazione
   const createCompanyConfig = async (configData: Partial<CompanyData>) => {
     loading.value = true;
     error.value = null;
@@ -61,7 +61,7 @@ export function useCompanyConfig() {
         customer_invoice: true
       };
 
-      console.log('📤 Sign up con:', payload);
+      console.log('📤 Registrazione con:', payload);
 
       const response = await invoiceApiInstance.post(
         '/IT-configurations',
@@ -88,11 +88,11 @@ export function useCompanyConfig() {
       };
 
       myCompany.value = companyData;
-      saveSession(companyData); // ← SALVA LA SESSIONE
+      saveSession(companyData);
       
       return companyData;
     } catch (err: any) {
-      console.error('❌ Errore sign up:', err.response?.data);
+      console.error('❌ Errore registrazione:', err.response?.data);
       error.value = err.response?.data?.message || err.message;
       throw err;
     } finally {
@@ -100,41 +100,52 @@ export function useCompanyConfig() {
     }
   };
 
-  // Verifica se esiste già (LOGIN)
-  const loginWithVat = async (vatNumber: string) => {
+  // LOGIN - con Codice Fiscale
+  const loginWithFiscalId = async (fiscalId: string) => {
     loading.value = true;
     error.value = null;
 
     try {
+      console.log('🔐 Login con Codice Fiscale:', fiscalId);
+
       const response = await invoiceApiInstance.get(
-        `/IT-configurations/${vatNumber}`
+        `/IT-configurations/${fiscalId}`
       );
 
       console.log('✅ Login riuscito!', response.data);
 
       const apiData = response.data.data;
+      
+      // La P.IVA spesso è uguale al fiscal_id per le società
       const companyData: CompanyData = {
-        vat_number: vatNumber,
+        vat_number: apiData.fiscal_id, // Usa fiscal_id come P.IVA
         fiscal_id: apiData.fiscal_id,
         name: apiData.name,
         email: apiData.email,
         address: {
-          street: '',
-          city: '',
-          zip: '',
-          province: '',
-          country: 'IT'
+          street: apiData.street || '',
+          city: apiData.city || '',
+          zip: apiData.zip_code || '',
+          province: apiData.province || '',
+          country: apiData.country || 'IT'
         },
+        sdi_code: apiData.sdi_code,
+        pec: apiData.pec,
         status: 'ACTIVE'
       };
 
       myCompany.value = companyData;
-      saveSession(companyData); // ← SALVA LA SESSIONE
+      saveSession(companyData);
       
       return companyData;
     } catch (err: any) {
+      console.error('❌ Errore login:', {
+        status: err.response?.status,
+        data: err.response?.data
+      });
+
       if (err.response?.status === 404) {
-        error.value = "P.IVA non trovata. Devi registrarti prima.";
+        error.value = "Codice Fiscale non trovato. Devi registrarti prima.";
       } else {
         error.value = err.response?.data?.message || "Errore durante il login";
       }
@@ -144,7 +155,7 @@ export function useCompanyConfig() {
     }
   };
 
-  // Carica automaticamente la sessione all'avvio
+  // Carica sessione all'avvio
   loadSession();
 
   return {
@@ -152,7 +163,7 @@ export function useCompanyConfig() {
     loading,
     error,
     createCompanyConfig,
-    loginWithVat,
+    loginWithFiscalId,
     logout,
     loadSession
   };
