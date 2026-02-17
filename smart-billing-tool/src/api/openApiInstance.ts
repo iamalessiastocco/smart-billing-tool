@@ -16,7 +16,7 @@ export const invoiceApiInstance = axios.create({
   }
 })
 
-// 🔧 INTERCEPTOR: Aggiungi token a tutte le richieste
+// Interceptor: Aggiungi token a tutte le richieste
 const addTokenInterceptor = (instance: any) => {
   instance.interceptors.request.use(
     (config: any) => {
@@ -24,10 +24,9 @@ const addTokenInterceptor = (instance: any) => {
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
-        console.log('🔑 Token aggiunto alla richiesta:', config.url)
-        console.log('📋 Authorization header:', config.headers.Authorization?.substring(0, 20) + '...')
+        console.log('[TOKEN] Aggiunto alla richiesta:', config.url)
       } else {
-        console.error('❌ ATTENZIONE: Token non trovato in .env!')
+        console.error('[ERROR] Token non trovato in .env!')
       }
       
       return config
@@ -37,19 +36,18 @@ const addTokenInterceptor = (instance: any) => {
     }
   )
   
-  // 🆕 INTERCEPTOR RESPONSE: Log degli errori
+  // Interceptor response: Log degli errori
   instance.interceptors.response.use(
     (response: any) => {
-      console.log('✅ Risposta ricevuta:', response.config.url, response.status)
+      console.log('[SUCCESS] Risposta ricevuta:', response.config.url, response.status)
       return response
     },
     (error: any) => {
-      console.error('❌ Errore API:', {
+      console.error('[API ERROR]', {
         url: error.config?.url,
         method: error.config?.method,
         status: error.response?.status,
-        data: error.response?.data,
-        headers: error.config?.headers
+        data: error.response?.data
       })
       return Promise.reject(error)
     }

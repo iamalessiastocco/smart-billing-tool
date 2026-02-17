@@ -43,10 +43,12 @@
           class="input-price"
         />
         <select v-model.number="item.vat_rate_code" class="input-vat">
-          <option :value="22">IVA 22% (Standard)</option>
+          <option :value="22">IVA 22% (Ordinaria)</option>
           <option :value="10">IVA 10% (Ridotta)</option>
+          <option :value="5">IVA 5% (Super Ridotta)</option>
           <option :value="4">IVA 4% (Minima)</option>
-          <option :value="0">IVA 0% (Esente)</option>
+  <!-- Per non imponibile, usa codici N1-N6 come stringa -->
+          <option value="N1">Non Imponibile (N1)</option>
         </select>
         <button @click="removeItem(index)" class="btn-remove" v-if="items.length > 1">
           ❌

@@ -32,7 +32,7 @@ export function useReceipt() {
           quantity: Number(item.quantity),
           description: String(item.description).trim(),
           unit_price: Number(item.unit_price),
-          vat_rate_code: Number(item.vat_rate_code)
+          vat_rate_code: isNaN(Number(item.vat_rate_code)) ? item.vat_rate_code : Number(item.vat_rate_code)
         }
         
         console.log(`--- Item ${index} TRANSFORMED ---`, transformed)
