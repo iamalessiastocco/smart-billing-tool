@@ -10,6 +10,9 @@
         <h3>{{ store.myCompany?.name }}</h3>
         <p><strong>Codice Fiscale/P.IVA:</strong> {{ store.myCompany?.fiscal_id }}</p>
         <p><strong>Email:</strong> {{ store.myCompany?.email }}</p>
+        <p v-if="store.myCompany?.receipts" class="feature-enabled">
+          ✅ Scontrini elettronici abilitati
+        </p>
       </div>
       <button @click="handleLogout" class="logout-btn">
         🚪 Esci (Logout)
@@ -25,7 +28,7 @@
           :class="{ active: activeTab === 'login' }"
           class="tab-btn"
         >
-          🔐 Login
+          🔓 Login
         </button>
         <button 
           @click="activeTab = 'signup'" 
@@ -58,7 +61,7 @@
           :disabled="loading || !loginFiscalId"
           class="submit-btn"
         >
-          {{ loading ? '⏳ Accesso...' : '🔐 Accedi' }}
+          {{ loading ? '⏳ Accesso...' : '🔓 Accedi' }}
         </button>
       </div>
 
@@ -67,7 +70,19 @@
         <h3>Registra la tua Azienda</h3>
         <p class="form-description">Compila i dati per creare la tua configurazione</p>
         
+        <!-- ALERT IMPORTANTE -->
+        <div class="alert-box">
+          <strong>⚠️ IMPORTANTE:</strong> Prima di procedere, devi abilitare le credenziali sul 
+          <a href="https://docs.openapi.it/Procedura-manuale-per-incarico.pdf" target="_blank" rel="noopener">
+            portale Agenzia delle Entrate
+          </a>
+          seguendo la procedura di incarico terzi.
+        </div>
+        
         <form @submit.prevent="handleSignup" class="form-grid">
+          <!-- DATI AZIENDALI -->
+          <div class="form-section-title">📋 Dati Aziendali</div>
+          
           <div class="form-field">
             <label>Codice Fiscale *</label>
             <input 
@@ -110,6 +125,57 @@
             <p class="field-note">⚠️ L'email non può essere modificata dopo la creazione</p>
           </div>
 
+          <!-- CREDENZIALI AGENZIA DELLE ENTRATE -->
+          <div class="form-section-title full-width">
+            🔐 Credenziali Agenzia delle Entrate (OBBLIGATORIO)
+          </div>
+          
+          <div class="info-box full-width">
+            <p>
+              <strong>📖 Come ottenere le credenziali:</strong><br>
+              1. Scarica la <a href="https://docs.openapi.it/Procedura-manuale-per-incarico.pdf" target="_blank">guida PDF</a><br>
+              2. Accedi al portale Agenzia delle Entrate<br>
+              3. Abilita l'incarico terzi per OpenAPI<br>
+              4. Inserisci qui le credenziali abilitate
+            </p>
+          </div>
+
+          <div class="form-field full-width">
+            <label>Codice Fiscale (per scontrini) *</label>
+            <input 
+              v-model="formData.receipts_authentication.taxCode" 
+              required
+              placeholder="Codice Fiscale abilitato sul portale AdE"
+              maxlength="16"
+              style="text-transform: uppercase"
+            />
+            <p class="field-hint">Stesso CF usato per l'incarico terzo sul portale</p>
+          </div>
+          
+          <div class="form-field">
+            <label>Password Portale AdE *</label>
+            <input 
+              v-model="formData.receipts_authentication.password" 
+              type="password"
+              required
+              placeholder="Password portale Agenzia delle Entrate"
+            />
+          </div>
+          
+          <div class="form-field">
+            <label>PIN Dispositivo *</label>
+            <input 
+              v-model="formData.receipts_authentication.pin" 
+              type="password"
+              required
+              maxlength="8"
+              placeholder="PIN del dispositivo (8 caratteri)"
+            />
+          </div>
+
+          <!-- INDIRIZZO (OPZIONALE) -->
+          <div class="form-section-title full-width">🏢 Indirizzo (Opzionale)</div>
+
           <div class="form-field full-width">
             <label>Indirizzo</label>
             <input 
@@ -145,6 +211,9 @@
             />
           </div>
 
+          <!-- ALTRI DATI (OPZIONALI) -->
+          <div class="form-section-title full-width">📧 Altri Dati (Opzionali)</div>
+
           <div class="form-field">
             <label>Codice SDI</label>
             <input 
@@ -155,7 +224,7 @@
             />
           </div>
 
-          <div class="form-field full-width">
+          <div class="form-field">
             <label>PEC</label>
             <input 
               v-model="formData.pec" 
@@ -164,7 +233,8 @@
             />
           </div>
 
-          <button type="submit" :disabled="loading" class="submit-btn">
+          <!-- SUBMIT -->
+          <button type="submit" :disabled="loading" class="submit-btn full-width">
             {{ loading ? '⏳ Registrazione...' : '✅ Registra Azienda' }}
           </button>
         </form>
@@ -178,11 +248,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useBillingStore } from '@/stores/billingStore';
-import { useCompanyConfig } from '@/composables/useCompanyConfig';
+import { ref, onMounted } from 'vue'
+import { useBillingStore } from '@/stores/billingStore'
+import { useCompanyConfig } from '@/composables/useCompanyConfig'
 
-const store = useBillingStore();
+const store = useBillingStore()
 const {
   myCompany,
   loading,
@@ -190,18 +260,26 @@ const {
   createCompanyConfig,
   loginWithFiscalId,
   logout: logoutConfig
-} = useCompanyConfig();
+} = useCompanyConfig()
 
-const activeTab = ref<'login' | 'signup'>('login');
-const loginFiscalId = ref('');
-const error = ref<string | null>(null);
-const success = ref<string | null>(null);
+const activeTab = ref<'login' | 'signup'>('login')
+const loginFiscalId = ref('')
+const error = ref<string | null>(null)
+const success = ref<string | null>(null)
 
 const formData = ref({
   fiscal_id: '',
   vat_number: '',
   name: '',
   email: '',
+  receipts: true, // Abilita scontrini
+  customer_invoice: false, // Disabilita fatture clienti di default
+  supplier_invoice: false, // Disabilita fatture fornitori di default
+  receipts_authentication: {
+    taxCode: '',
+    password: '',
+    pin: ''
+  },
   address: {
     street: '',
     city: '',
@@ -210,57 +288,67 @@ const formData = ref({
     country: 'IT'
   },
   sdi_code: '',
-  pec: '',
-  status: 'ACTIVE' as const
-});
+  pec: ''
+})
 
 // Carica sessione all'avvio
 onMounted(() => {
   if (myCompany.value) {
-    // nel caso la sessione venga ripristinata, setMyCompany è già stato chiamato
-    console.log('✅ Sessione caricata dalla composable:', myCompany.value.name);
+    console.log('[SESSION] Sessione caricata:', myCompany.value.name)
   }
-});
+})
 
 // LOGIN con Codice Fiscale
 const handleLogin = async () => {
-  error.value = null;
-  success.value = null;
+  error.value = null
+  success.value = null
 
   if (!loginFiscalId.value) {
-    error.value = "Inserisci il Codice Fiscale";
-    return;
+    error.value = "Inserisci il Codice Fiscale"
+    return
   }
 
   try {
-    const result = await loginWithFiscalId(loginFiscalId.value.toUpperCase());
+    const result = await loginWithFiscalId(loginFiscalId.value.toUpperCase())
     if (result.success && result.data) {
-      store.setMyCompany(result.data);
-      success.value = `Benvenuto/a ${result.data.name}!`;
-      loginFiscalId.value = '';
+      store.setMyCompany(result.data)
+      success.value = `Benvenuto/a ${result.data.name}!`
+      loginFiscalId.value = ''
     } else {
-      error.value = result.error || apiError.value || "Errore durante l'accesso";
+      error.value = result.error || apiError.value || "Errore durante l'accesso"
     }
   } catch (err) {
-    error.value = apiError.value || "Errore durante l'accesso";
+    error.value = apiError.value || "Errore durante l'accesso"
   }
-};
+}
 
 // SIGN UP
 const handleSignup = async () => {
-  error.value = null;
-  success.value = null;
+  error.value = null
+  success.value = null
 
-  if (!formData.value.fiscal_id || !formData.value.vat_number || !formData.value.name || !formData.value.email) {
-    error.value = "Compila tutti i campi obbligatori (*)";
-    return;
+  // Validazione campi obbligatori
+  if (!formData.value.fiscal_id || !formData.value.vat_number || 
+      !formData.value.name || !formData.value.email) {
+    error.value = "Compila tutti i campi obbligatori (*) della sezione Dati Aziendali"
+    return
+  }
+
+  // Validazione credenziali AdE
+  if (!formData.value.receipts_authentication.taxCode || 
+      !formData.value.receipts_authentication.password || 
+      !formData.value.receipts_authentication.pin) {
+    error.value = "Compila tutti i campi obbligatori (*) delle Credenziali Agenzia delle Entrate"
+    return
   }
 
   try {
-    const result = await createCompanyConfig(formData.value);
+    const result = await createCompanyConfig(formData.value)
     if (result.success && result.data) {
-      store.setMyCompany(result.data);
-      success.value = "Registrazione completata! Benvenuto/a!";
+      store.setMyCompany(result.data)
+      success.value = result.wasExisting 
+        ? "Azienda già registrata! Login effettuato."
+        : "Registrazione completata! Benvenuto/a!"
       
       // Reset form
       formData.value = {
@@ -268,32 +356,39 @@ const handleSignup = async () => {
         vat_number: '',
         name: '',
         email: '',
+        receipts: true,
+        customer_invoice: false,
+        supplier_invoice: false,
+        receipts_authentication: {
+          taxCode: '',
+          password: '',
+          pin: ''
+        },
         address: { street: '', city: '', zip: '', province: '', country: 'IT' },
         sdi_code: '',
-        pec: '',
-        status: 'ACTIVE'
-      };
+        pec: ''
+      }
     } else {
-      error.value = result.error || apiError.value || "Errore durante la registrazione";
+      error.value = result.error || apiError.value || "Errore durante la registrazione"
     }
   } catch (err) {
-    error.value = apiError.value || "Errore durante la registrazione";
+    error.value = apiError.value || "Errore durante la registrazione"
   }
-};
+}
 
 // LOGOUT
 const handleLogout = () => {
-  logoutConfig();
-  store.logout();
-  error.value = null;
-  success.value = "Logout effettuato. A presto!";
-  activeTab.value = 'login';
-  loginFiscalId.value = '';
+  logoutConfig()
+  store.logout()
+  error.value = null
+  success.value = "Logout effettuato. A presto!"
+  activeTab.value = 'login'
+  loginFiscalId.value = ''
   
   setTimeout(() => {
-    success.value = null;
-  }, 3000);
-};
+    success.value = null
+  }, 3000)
+}
 </script>
 
 <style scoped>
@@ -343,6 +438,15 @@ h2 {
   color: #495057;
 }
 
+.feature-enabled {
+  color: #28a745;
+  font-weight: 600;
+  background: #d4edda;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
 .logout-btn {
   padding: 12px 30px;
   background: #6c757d;
@@ -387,6 +491,43 @@ h2 {
   background: #f8f9fa;
 }
 
+/* ALERTS */
+.alert-box {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #856404;
+}
+
+.alert-box strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.alert-box a {
+  color: #004085;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.info-box {
+  background: #d1ecf1;
+  border: 2px solid #bee5eb;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  color: #0c5460;
+  font-size: 0.9em;
+}
+
+.info-box a {
+  color: #004085;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 /* FORMS */
 .auth-form {
   background: white;
@@ -405,6 +546,17 @@ h2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
+}
+
+.form-section-title {
+  grid-column: 1 / -1;
+  font-weight: 700;
+  color: #495057;
+  font-size: 1.1em;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #dee2e6;
 }
 
 .form-field {
@@ -442,6 +594,9 @@ h2 {
   color: #856404;
   margin-top: 4px;
   font-style: italic;
+  background: #fff3cd;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .field-hint {
@@ -494,5 +649,15 @@ h2 {
   background: #d4edda;
   border-radius: 6px;
   border-left: 4px solid #28a745;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-field {
+    grid-column: 1;
+  }
 }
 </style>
