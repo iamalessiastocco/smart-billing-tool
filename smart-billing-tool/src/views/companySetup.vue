@@ -259,6 +259,7 @@ const {
   error: apiError,
   createCompanyConfig,
   loginWithFiscalId,
+  loadSession,
   logout: logoutConfig
 } = useCompanyConfig()
 
@@ -291,8 +292,9 @@ const formData = ref({
   pec: ''
 })
 
-// Carica sessione all'avvio
+// Carica sessione salvata all'avvio
 onMounted(() => {
+  loadSession()
   if (myCompany.value) {
     console.log('[SESSION] Sessione caricata:', myCompany.value.name)
   }

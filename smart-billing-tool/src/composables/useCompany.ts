@@ -39,7 +39,7 @@ export function useCompany() {
     error.value = null;
 
     try {
-      // CAMBIATO: usa companyApiInstance invece di openApiInstance
+      // Usa IT-advanced per ricerca aziende (Company API - Pacchetto 3)
       const response = await companyApiInstance.get<OpenApiResponse<OpenApiCompanyResponse[]>>(
         `/IT-advanced/${vatNumber}`
       );

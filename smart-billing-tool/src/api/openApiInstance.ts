@@ -21,14 +21,16 @@ const addTokenInterceptor = (instance: any) => {
   instance.interceptors.request.use(
     (config: any) => {
       const token = import.meta.env.VITE_OPENAPI_TOKEN
-      
+
       if (token) {
+        // OpenAPI usa Bearer token standard OAuth 2.0
         config.headers.Authorization = `Bearer ${token}`
         console.log('[TOKEN] Aggiunto alla richiesta:', config.url)
+        console.log('[TOKEN] Header Authorization:', config.headers.Authorization)
       } else {
         console.error('[ERROR] Token non trovato in .env!')
       }
-      
+
       return config
     },
     (error: any) => {

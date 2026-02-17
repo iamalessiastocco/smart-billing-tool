@@ -32,7 +32,7 @@ export function useReceipt() {
           quantity: Number(item.quantity),
           description: String(item.description).trim(),
           unit_price: Number(item.unit_price),
-          vat_rate_code: isNaN(Number(item.vat_rate_code)) ? item.vat_rate_code : Number(item.vat_rate_code)
+          vat_rate_code: String(item.vat_rate_code)
         }
         
         console.log(`--- Item ${index} TRANSFORMED ---`, transformed)
@@ -56,12 +56,14 @@ export function useReceipt() {
       
       return { success: true, data: response.data }
     } catch (err: any) {
-      console.error('ERROR! Creazione scontrino fallita:', err.response?.data)
-      
+      console.error('ERROR! Creazione scontrino fallita:', err.response?.data || err.message)
+
       if (err.response?.status === 422) {
         error.value = `Validazione fallita: ${err.response?.data?.message || 'Dati non validi'}`
+      } else if (err.response?.data?.message) {
+        error.value = err.response.data.message
       } else {
-        error.value = err.response?.data?.message || 'Errore durante la creazione dello scontrino'
+        error.value = err.message || 'Errore durante la creazione dello scontrino'
       }
 
       return { success: false, error: error.value }
