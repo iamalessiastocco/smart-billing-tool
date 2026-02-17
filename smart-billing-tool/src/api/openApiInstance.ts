@@ -1,75 +1,61 @@
-// src/api/openApiInstance.ts
-import axios from 'axios';
+import axios from 'axios'
 
 // Istanza per Company API
 export const companyApiInstance = axios.create({
-  baseURL: '/api/company',  // ← USA IL PROXY
+  baseURL: '/api/company',
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  },
-  timeout: 15000
-});
+    'Content-Type': 'application/json'
+  }
+})
 
 // Istanza per Invoice API
 export const invoiceApiInstance = axios.create({
-  baseURL: '/api/invoice',  // ← USA IL PROXY
+  baseURL: '/api/invoice',
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  },
-  timeout: 15000
-});
-
-// Token
-const getAuthToken = () => {
-  const token = import.meta.env.VITE_OPENAPI_TOKEN;
-  if (!token) {
-    console.error('⚠️ VITE_OPENAPI_TOKEN non configurato!');
+    'Content-Type': 'application/json'
   }
-  return token;
-};
+})
 
-// Interceptor Company API
-companyApiInstance.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  console.log('📡 Company API Request:', config.method?.toUpperCase(), config.url);
-  return config;
-});
+// 🔧 INTERCEPTOR: Aggiungi token a tutte le richieste
+const addTokenInterceptor = (instance: any) => {
+  instance.interceptors.request.use(
+    (config: any) => {
+      const token = import.meta.env.VITE_OPENAPI_TOKEN
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+        console.log('🔑 Token aggiunto alla richiesta:', config.url)
+        console.log('📋 Authorization header:', config.headers.Authorization?.substring(0, 20) + '...')
+      } else {
+        console.error('❌ ATTENZIONE: Token non trovato in .env!')
+      }
+      
+      return config
+    },
+    (error: any) => {
+      return Promise.reject(error)
+    }
+  )
+  
+  // 🆕 INTERCEPTOR RESPONSE: Log degli errori
+  instance.interceptors.response.use(
+    (response: any) => {
+      console.log('✅ Risposta ricevuta:', response.config.url, response.status)
+      return response
+    },
+    (error: any) => {
+      console.error('❌ Errore API:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.config?.headers
+      })
+      return Promise.reject(error)
+    }
+  )
+}
 
-companyApiInstance.interceptors.response.use(
-  (response) => {
-    console.log('✅ Company API Response:', response.status);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Company API Error:', error.response?.status, error.message);
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor Invoice API
-invoiceApiInstance.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  console.log('📡 Invoice API Request:', config.method?.toUpperCase(), config.url);
-  return config;
-});
-
-invoiceApiInstance.interceptors.response.use(
-  (response) => {
-    console.log('✅ Invoice API Response:', response.status);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Invoice API Error:', error.response?.status, error.message);
-    return Promise.reject(error);
-  }
-);
-
-export default invoiceApiInstance;
+// Applica interceptor a entrambe le istanze
+addTokenInterceptor(companyApiInstance)
+addTokenInterceptor(invoiceApiInstance)

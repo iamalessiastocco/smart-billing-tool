@@ -183,10 +183,10 @@ import { useBillingStore } from '@/stores/billingStore';
 import { useCompanyConfig } from '@/composables/useCompanyConfig';
 
 const store = useBillingStore();
-const { 
-  myCompany, 
-  loading, 
-  error: apiError, 
+const {
+  myCompany,
+  loading,
+  error: apiError,
   createCompanyConfig,
   loginWithFiscalId,
   logout: logoutConfig
@@ -217,8 +217,8 @@ const formData = ref({
 // Carica sessione all'avvio
 onMounted(() => {
   if (myCompany.value) {
-    store.setMyCompany(myCompany.value);
-    console.log('✅ Sessione ripristinata:', myCompany.value.name);
+    // nel caso la sessione venga ripristinata, setMyCompany è già stato chiamato
+    console.log('✅ Sessione caricata dalla composable:', myCompany.value.name);
   }
 });
 
@@ -233,10 +233,14 @@ const handleLogin = async () => {
   }
 
   try {
-    const company = await loginWithFiscalId(loginFiscalId.value.toUpperCase());
-    store.setMyCompany(company);
-    success.value = `Benvenuto/a ${company.name}!`;
-    loginFiscalId.value = '';
+    const result = await loginWithFiscalId(loginFiscalId.value.toUpperCase());
+    if (result.success && result.data) {
+      store.setMyCompany(result.data);
+      success.value = `Benvenuto/a ${result.data.name}!`;
+      loginFiscalId.value = '';
+    } else {
+      error.value = result.error || apiError.value || "Errore durante l'accesso";
+    }
   } catch (err) {
     error.value = apiError.value || "Errore durante l'accesso";
   }
@@ -253,21 +257,25 @@ const handleSignup = async () => {
   }
 
   try {
-    const company = await createCompanyConfig(formData.value);
-    store.setMyCompany(company);
-    success.value = "Registrazione completata! Benvenuto/a!";
-    
-    // Reset form
-    formData.value = {
-      fiscal_id: '',
-      vat_number: '',
-      name: '',
-      email: '',
-      address: { street: '', city: '', zip: '', province: '', country: 'IT' },
-      sdi_code: '',
-      pec: '',
-      status: 'ACTIVE'
-    };
+    const result = await createCompanyConfig(formData.value);
+    if (result.success && result.data) {
+      store.setMyCompany(result.data);
+      success.value = "Registrazione completata! Benvenuto/a!";
+      
+      // Reset form
+      formData.value = {
+        fiscal_id: '',
+        vat_number: '',
+        name: '',
+        email: '',
+        address: { street: '', city: '', zip: '', province: '', country: 'IT' },
+        sdi_code: '',
+        pec: '',
+        status: 'ACTIVE'
+      };
+    } else {
+      error.value = result.error || apiError.value || "Errore durante la registrazione";
+    }
   } catch (err) {
     error.value = apiError.value || "Errore durante la registrazione";
   }
