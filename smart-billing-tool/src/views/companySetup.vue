@@ -46,14 +46,17 @@
         
         <div class="form-field">
           <label>Codice Fiscale / P.IVA *</label>
-          <input 
-            v-model="loginFiscalId" 
+          <input
+            v-model="loginFiscalId"
             placeholder="RSSMRA80A01H501U oppure 12345678901"
             maxlength="16"
             @keyup.enter="handleLogin"
+            @blur="validateField('loginFiscalId', loginFiscalId, true)"
+            :class="{ 'input-error': validationErrors['loginFiscalId'] }"
             style="text-transform: uppercase"
           />
-          <p class="field-hint">Per le società: Codice Fiscale = P.IVA (11 cifre)</p>
+          <p v-if="validationErrors['loginFiscalId']" class="field-error">{{ validationErrors['loginFiscalId'] }}</p>
+          <p v-else class="field-hint">Per le società: Codice Fiscale = P.IVA (11 cifre)</p>
         </div>
 
         <button 
@@ -85,44 +88,56 @@
           
           <div class="form-field">
             <label>Codice Fiscale *</label>
-            <input 
-              v-model="formData.fiscal_id" 
-              required 
-              maxlength="16" 
+            <input
+              v-model="formData.fiscal_id"
+              required
+              maxlength="16"
               style="text-transform: uppercase"
               placeholder="RSSMRA80A01H501U"
+              @blur="validateField('fiscal_id', formData.fiscal_id, true)"
+              :class="{ 'input-error': validationErrors['fiscal_id'] }"
             />
-            <p class="field-hint">Per società: uguale alla P.IVA</p>
+            <p v-if="validationErrors['fiscal_id']" class="field-error">{{ validationErrors['fiscal_id'] }}</p>
+            <p v-else class="field-hint">Per società: uguale alla P.IVA</p>
           </div>
-          
+
           <div class="form-field">
             <label>Partita IVA *</label>
-            <input 
-              v-model="formData.vat_number" 
-              required 
+            <input
+              v-model="formData.vat_number"
+              required
               maxlength="11"
               placeholder="12345678901"
+              @blur="validateField('vat_number', formData.vat_number, true)"
+              :class="{ 'input-error': validationErrors['vat_number'] }"
             />
+            <p v-if="validationErrors['vat_number']" class="field-error">{{ validationErrors['vat_number'] }}</p>
           </div>
 
           <div class="form-field full-width">
             <label>Ragione Sociale *</label>
-            <input 
-              v-model="formData.name" 
-              required 
+            <input
+              v-model="formData.name"
+              required
               placeholder="La Mia Azienda S.r.l."
+              @blur="formData.name.trim() ? delete validationErrors['name'] : (validationErrors['name'] = 'Campo obbligatorio')"
+              :class="{ 'input-error': validationErrors['name'] }"
             />
+            <p v-if="validationErrors['name']" class="field-error">{{ validationErrors['name'] }}</p>
           </div>
 
           <div class="form-field full-width">
             <label>Email *</label>
-            <input 
-              v-model="formData.email" 
-              type="email" 
-              required 
-              placeholder="info@azienda.it" 
+            <input
+              v-model="formData.email"
+              type="email"
+              required
+              placeholder="info@azienda.it"
+              @blur="validateField('email', formData.email, true)"
+              :class="{ 'input-error': validationErrors['email'] }"
             />
-            <p class="field-note">⚠️ L'email non può essere modificata dopo la creazione</p>
+            <p v-if="validationErrors['email']" class="field-error">{{ validationErrors['email'] }}</p>
+            <p v-else class="field-note">⚠️ L'email non può essere modificata dopo la creazione</p>
           </div>
 
           <!-- CREDENZIALI AGENZIA DELLE ENTRATE -->
@@ -142,35 +157,44 @@
 
           <div class="form-field full-width">
             <label>Codice Fiscale (per scontrini) *</label>
-            <input 
-              v-model="formData.receipts_authentication.taxCode" 
+            <input
+              v-model="formData.receipts_authentication.taxCode"
               required
               placeholder="Codice Fiscale abilitato sul portale AdE"
               maxlength="16"
               style="text-transform: uppercase"
+              @blur="validateField('taxCode', formData.receipts_authentication.taxCode, true)"
+              :class="{ 'input-error': validationErrors['taxCode'] }"
             />
-            <p class="field-hint">Stesso CF usato per l'incarico terzo sul portale</p>
+            <p v-if="validationErrors['taxCode']" class="field-error">{{ validationErrors['taxCode'] }}</p>
+            <p v-else class="field-hint">Stesso CF usato per l'incarico terzo sul portale</p>
           </div>
-          
+
           <div class="form-field">
             <label>Password Portale AdE *</label>
-            <input 
-              v-model="formData.receipts_authentication.password" 
+            <input
+              v-model="formData.receipts_authentication.password"
               type="password"
               required
               placeholder="Password portale Agenzia delle Entrate"
+              @blur="formData.receipts_authentication.password ? delete validationErrors['password'] : (validationErrors['password'] = 'Campo obbligatorio')"
+              :class="{ 'input-error': validationErrors['password'] }"
             />
+            <p v-if="validationErrors['password']" class="field-error">{{ validationErrors['password'] }}</p>
           </div>
-          
+
           <div class="form-field">
             <label>PIN Dispositivo *</label>
-            <input 
-              v-model="formData.receipts_authentication.pin" 
+            <input
+              v-model="formData.receipts_authentication.pin"
               type="password"
               required
               maxlength="8"
-              placeholder="PIN del dispositivo (8 caratteri)"
+              placeholder="PIN del dispositivo (8 cifre)"
+              @blur="validateField('pin', formData.receipts_authentication.pin, true)"
+              :class="{ 'input-error': validationErrors['pin'] }"
             />
+            <p v-if="validationErrors['pin']" class="field-error">{{ validationErrors['pin'] }}</p>
           </div>
 
           <!-- INDIRIZZO (OPZIONALE) -->
@@ -194,21 +218,27 @@
 
           <div class="form-field">
             <label>CAP</label>
-            <input 
-              v-model="formData.address.zip" 
+            <input
+              v-model="formData.address.zip"
               maxlength="5"
               placeholder="00100"
+              @blur="formData.address.zip ? validateField('zip', formData.address.zip) : delete validationErrors['zip']"
+              :class="{ 'input-error': validationErrors['zip'] }"
             />
+            <p v-if="validationErrors['zip']" class="field-error">{{ validationErrors['zip'] }}</p>
           </div>
 
           <div class="form-field">
             <label>Provincia</label>
-            <input 
-              v-model="formData.address.province" 
-              maxlength="2" 
-              placeholder="RM" 
+            <input
+              v-model="formData.address.province"
+              maxlength="2"
+              placeholder="RM"
               style="text-transform: uppercase"
+              @blur="formData.address.province ? validateField('province', formData.address.province) : delete validationErrors['province']"
+              :class="{ 'input-error': validationErrors['province'] }"
             />
+            <p v-if="validationErrors['province']" class="field-error">{{ validationErrors['province'] }}</p>
           </div>
 
           <!-- ALTRI DATI (OPZIONALI) -->
@@ -216,21 +246,27 @@
 
           <div class="form-field">
             <label>Codice SDI</label>
-            <input 
-              v-model="formData.sdi_code" 
-              maxlength="7" 
+            <input
+              v-model="formData.sdi_code"
+              maxlength="7"
               placeholder="ABCD123"
               style="text-transform: uppercase"
+              @blur="formData.sdi_code ? validateField('sdi_code', formData.sdi_code) : delete validationErrors['sdi_code']"
+              :class="{ 'input-error': validationErrors['sdi_code'] }"
             />
+            <p v-if="validationErrors['sdi_code']" class="field-error">{{ validationErrors['sdi_code'] }}</p>
           </div>
 
           <div class="form-field">
             <label>PEC</label>
-            <input 
-              v-model="formData.pec" 
+            <input
+              v-model="formData.pec"
               type="email"
               placeholder="azienda@pec.it"
+              @blur="formData.pec ? validateField('pec', formData.pec) : delete validationErrors['pec']"
+              :class="{ 'input-error': validationErrors['pec'] }"
             />
+            <p v-if="validationErrors['pec']" class="field-error">{{ validationErrors['pec'] }}</p>
           </div>
 
           <!-- SUBMIT -->
@@ -267,6 +303,142 @@ const activeTab = ref<'login' | 'signup'>('login')
 const loginFiscalId = ref('')
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
+
+// === REGEX DI VALIDAZIONE ===
+// Omocodia: l'AdE sostituisce cifre con lettere (0→L,1→M,2→N,3→P,4→Q,5→R,6→S,7→T,8→U,9→V)
+// nelle posizioni 6,7,9,10,12,13,14 del CF. Usiamo [0-9LMNPQRSTUV] per queste posizioni.
+const oD = '[0-9LMNPQRSTUV]' // cifra o lettera omocodica
+// Posizione 11 (codice catastale): normalmente lettera, ma in sandbox può essere cifra
+const cfBody = `[A-Z]{6}${oD}{2}[A-Z]${oD}{2}[A-Z0-9]${oD}{3}[A-Z]`
+const patterns = {
+  // Codice Fiscale italiano (con supporto omocodia)
+  codiceFiscale: new RegExp(`^${cfBody}$`),
+  // Partita IVA: esattamente 11 cifre
+  partitaIva: /^\d{11}$/,
+  // CF (con omocodia) o P.IVA (login accetta entrambi)
+  fiscalId: new RegExp(`^(${cfBody}|\\d{11})$`),
+  // Email standard
+  email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  // CAP italiano: 5 cifre
+  cap: /^\d{5}$/,
+  // Provincia: 2 lettere maiuscole
+  provincia: /^[A-Z]{2}$/,
+  // Codice SDI: 7 caratteri alfanumerici
+  sdiCode: /^[A-Z0-9]{7}$/,
+  // PIN dispositivo AdE: 8 cifre
+  pinAdE: /^\d{8}$/
+}
+
+// Messaggi di errore per campo
+const validationErrors = ref<Record<string, string>>({})
+
+const validateField = (field: string, value: string, required: boolean = false): boolean => {
+  const v = value.trim().toUpperCase()
+
+  // Campo vuoto: errore solo se obbligatorio
+  if (!v) {
+    if (required) {
+      validationErrors.value[field] = 'Campo obbligatorio'
+      return false
+    }
+    delete validationErrors.value[field]
+    return true
+  }
+
+  switch (field) {
+    case 'loginFiscalId':
+    case 'fiscal_id':
+      if (!patterns.fiscalId.test(v)) {
+        validationErrors.value[field] = 'Formato non valido. Codice Fiscale (16 caratteri, es. RSSMRA80A01H501U) o P.IVA (11 cifre)'
+        return false
+      }
+      break
+    case 'vat_number':
+      if (!patterns.partitaIva.test(v)) {
+        validationErrors.value[field] = 'La P.IVA deve contenere esattamente 11 cifre'
+        return false
+      }
+      break
+    case 'email':
+    case 'pec':
+      if (!patterns.email.test(value.trim())) {
+        validationErrors.value[field] = field === 'pec' ? 'Formato PEC non valido (es. azienda@pec.it)' : 'Formato email non valido'
+        return false
+      }
+      break
+    case 'taxCode':
+      if (!patterns.codiceFiscale.test(v)) {
+        validationErrors.value[field] = 'Codice Fiscale non valido (16 caratteri, es. RSSMRA80A01H501U)'
+        return false
+      }
+      break
+    case 'pin':
+      if (!patterns.pinAdE.test(v)) {
+        validationErrors.value[field] = 'Il PIN deve contenere esattamente 8 cifre'
+        return false
+      }
+      break
+    case 'zip':
+      if (!patterns.cap.test(v)) {
+        validationErrors.value[field] = 'Il CAP deve contenere esattamente 5 cifre'
+        return false
+      }
+      break
+    case 'province':
+      if (!patterns.provincia.test(v)) {
+        validationErrors.value[field] = 'La provincia deve essere di 2 lettere (es. RM, MI)'
+        return false
+      }
+      break
+    case 'sdi_code':
+      if (!patterns.sdiCode.test(v)) {
+        validationErrors.value[field] = 'Il codice SDI deve contenere 7 caratteri alfanumerici'
+        return false
+      }
+      break
+  }
+
+  delete validationErrors.value[field]
+  return true
+}
+
+const validateLoginForm = (): boolean => {
+  return validateField('loginFiscalId', loginFiscalId.value, true)
+}
+
+const validateSignupForm = (): boolean => {
+  const results = [
+    validateField('fiscal_id', formData.value.fiscal_id, true),
+    validateField('vat_number', formData.value.vat_number, true),
+    validateField('email', formData.value.email, true),
+    validateField('taxCode', formData.value.receipts_authentication.taxCode, true),
+    validateField('pin', formData.value.receipts_authentication.pin, true),
+  ]
+
+  // Campi opzionali: valida solo se compilati
+  if (formData.value.address.zip) results.push(validateField('zip', formData.value.address.zip))
+  if (formData.value.address.province) results.push(validateField('province', formData.value.address.province))
+  if (formData.value.sdi_code) results.push(validateField('sdi_code', formData.value.sdi_code))
+  if (formData.value.pec) results.push(validateField('pec', formData.value.pec))
+
+  // Ragione sociale: solo check non vuoto
+  if (!formData.value.name.trim()) {
+    validationErrors.value['name'] = 'Campo obbligatorio'
+    results.push(false)
+  } else {
+    delete validationErrors.value['name']
+  }
+
+  // Password AdE: solo check non vuoto
+  if (!formData.value.receipts_authentication.password) {
+    validationErrors.value['password'] = 'Campo obbligatorio'
+    results.push(false)
+  } else {
+    delete validationErrors.value['password']
+  }
+
+  return results.every(r => r)
+}
 
 const formData = ref({
   fiscal_id: '',
@@ -305,8 +477,8 @@ const handleLogin = async () => {
   error.value = null
   success.value = null
 
-  if (!loginFiscalId.value) {
-    error.value = "Inserisci il Codice Fiscale"
+  if (!validateLoginForm()) {
+    error.value = "Controlla il formato del Codice Fiscale o P.IVA inserito"
     return
   }
 
@@ -329,18 +501,8 @@ const handleSignup = async () => {
   error.value = null
   success.value = null
 
-  // Validazione campi obbligatori
-  if (!formData.value.fiscal_id || !formData.value.vat_number || 
-      !formData.value.name || !formData.value.email) {
-    error.value = "Compila tutti i campi obbligatori (*) della sezione Dati Aziendali"
-    return
-  }
-
-  // Validazione credenziali AdE
-  if (!formData.value.receipts_authentication.taxCode || 
-      !formData.value.receipts_authentication.password || 
-      !formData.value.receipts_authentication.pin) {
-    error.value = "Compila tutti i campi obbligatori (*) delle Credenziali Agenzia delle Entrate"
+  if (!validateSignupForm()) {
+    error.value = "Correggi gli errori nei campi evidenziati prima di procedere"
     return
   }
 
@@ -606,6 +768,18 @@ h2 {
   color: #6c757d;
   margin-top: 4px;
   font-style: italic;
+}
+
+.field-error {
+  font-size: 0.75em;
+  color: #dc3545;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.input-error {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
 }
 
 .submit-btn {
