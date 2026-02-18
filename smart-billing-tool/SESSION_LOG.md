@@ -161,6 +161,53 @@ Tutti i test verificano le stesse regex usate in `CompanySetup.vue`.
 
 ---
 
+## Ricerca 9: Analisi vincoli di validazione dalla documentazione OpenAPI
+
+**Documenti consultati**: OAS `invoice.openapi.json`, OAS `company.openapi.json`, docs prodotto, FAQ
+
+**Obiettivo**: Verificare se le API OpenAPI (company e invoice) definiscono vincoli di validazione sui campi `taxCode`, `password` e `pin` dentro `receipts_authentication`.
+
+**Risultato**: Le specifiche OpenAPI **non definiscono vincoli client-side** su nessuno dei tre campi:
+
+| Campo | Schema OpenAPI | Validazione locale nostra |
+|---|---|---|
+| `taxCode` | `type: string` (nessun pattern/length) | Regex CF 16 chars con omocodia |
+| `password` | `type: string` (nessun pattern/length) | Solo check non-vuoto |
+| `pin` | `type: string` (nessun pattern/length) | `^\d{8}$` (8 cifre) |
+
+Anche `fiscal_id` nel body del POST `/IT-configurations` è semplicemente `type: string`.
+
+**Sandbox e credenziali di test**: La documentazione non fornisce valori fittizi per `taxCode`/`password`/`pin` sandbox. Le FAQ confermano che il sandbox è gratuito e le risposte sono simulate, ma le credenziali AdE vanno comunque fornite nel payload. Per chiarimenti specifici: contattare supporto OpenAPI.
+
+---
+
+## Ricerca 10: Analisi endpoint GET /IT-receipts per storico scontrini
+
+**Documento consultato**: OAS `invoice.openapi.json`
+
+**Obiettivo**: Verificare se esiste un'API per recuperare tutti gli scontrini emessi dall'azienda loggata.
+
+**Risultato**: L'endpoint `GET /IT-receipts` esiste e supporta filtri e paginazione.
+
+**Query parameters**:
+| Parametro | Tipo | Descrizione |
+|---|---|---|
+| `fiscal_id` | string | Filtra per azienda emittente |
+| `status` | string (csv) | `new`, `retry`, `submitted`, `ready`, `failed`, `voided` |
+| `type` | string (csv) | `sale`, `return`, `void` |
+| `document_number` | string | Numero documento specifico |
+| `created_at` | date | Data creazione (supporta `[before]`/`[after]`) |
+| `document_date` | date | Data documento |
+| `parent_receipt_id` | string | Per resi/annullamenti collegati |
+| `skip` | integer | Offset paginazione |
+| `limit` | integer | Max record (max 100) |
+
+**Campi risposta** (per ogni scontrino in `data[]`): `id`, `fiscal_id`, `items[]`, `status`, `type`, `document_number`, `document_date`, `total_amount`, `cash_payment_amount`, `electronic_payment_amount`, `lottery_code`, `created_at`, `error_message`, `error_code`, totali IVA/sconti, `tags[]`.
+
+**Stato nel progetto**: Non ancora implementato. Il composable `useReceipt.ts` ha solo il `POST /IT-receipts`.
+
+---
+
 ## Note importanti
 
 - **Aziende con receipts_authentication**: Solo 2 su 9 configurazioni registrate hanno `receipts_authentication` (necessario per emettere scontrini): `99988877766` e `RSSMRA67B8N5458J`.
